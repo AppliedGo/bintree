@@ -56,45 +56,12 @@ import (
 	"log"
 )
 
-// Aliases for the results of comparing two node values.
+// Aliases for the results of comparing two values.
 const (
-	less = iota
-	equal
-	greater
+	less    = -1
+	equal   = 0
+	greater = 1
 )
-
-/*
-## The External Data Container
-
-For flexibility we don't store the value itself but rather an index to an external data container. (I got this "trick" from [here](https://github.com/natefinch/tree).)
-
-The external data container can hold any value of any type, as long as the type is comparable, and as long as it implements a comparison function that the tree data type can use.
-
-The comparison function has its own type, `Comparer`. The external data container just needs to implement a function with the same function signature as `Comparer`. We then can pass the comparison function to every tree operation that requires comparison.
-
-Let's define the Comparer function now, as well as a simple data container type, including its comparison function.
-
-*/
-
-// `Comparer` is a function that returns these constants:
-// * `less` if the data at index i is less than that at index j,
-// * `equal` if both are the same, and
-// * `greater` otherwise.
-type Comparer func(i, j int) int
-
-// `Container` is the external data container. The underlying type can by any kind of container (array, slice, map,...) as long as its elements are comparable. Here, we simply use a slice of strings.
-type Container []string
-
-// `Compare` implements type `Comparer`.
-func (c Container) Compare(i, j int) int {
-	if c[i] < c[j] {
-		return less
-	}
-	if c[i] == c[j] {
-		return equal
-	}
-	return greater
-}
 
 /*
 ## A Tree Node
@@ -106,12 +73,12 @@ In general, a tree node consists of
 
 This is a recursive data structure: Each subtree of a node is also a node containing subtrees.
 
-In our setup, the "value" is in fact just the index to the value in the external data container, as explained above.
+In this minimal setup, the tree contains simple string data.
 */
 
-// `Node` contains the data index, a left child node, and a right child node.
+// `Node` contains the data, a left child node, and a right child node.
 type Node struct {
-	index int
+	Value string
 	Left  *Node
 	Right *Node
 }
@@ -124,37 +91,35 @@ Insert inserts a value...
 
 */
 
-// `Insert` takes an index and a Comparer.
-func (n *Node) Insert(i int, compare Comparer) error {
+// `Insert` inserts a new string value into the tree.
+// Return values:
+// * `true` if the string was successfully inserted,
+// * `false` if the string value already exists in the tree.
+func (n *Node) Insert(s string) error {
 
 	if n == nil {
 		return errors.New("Cannot insert a value into a nil tree")
 	}
 
-	// The Comparer must exist.
-	if compare == nil {
-		return errors.New("compare must not be nil")
-	}
-
-	// Compare the data at index `i` with the data at index `n.index`.
-	switch compare(i, n.index) {
+	// Compare the data.
+	switch {
 	// If the data is already in the tree, return.
-	case equal:
+	case s == n.Value:
 		return nil
 	// If the data value is less than the current node's value, and if the left child node is `nil`, insert a new left child node. Else call `Insert` on the left subtree.
-	case less:
+	case s < n.Value:
 		if n.Left == nil {
-			n.Left = &Node{index: i}
+			n.Left = &Node{Value: s}
 			return nil
 		}
-		return n.Left.Insert(i, compare)
+		return n.Left.Insert(s)
 	// If the data value is greater than the current node's value, do the same but for the right subtree.
-	case greater:
+	case s > n.Value:
 		if n.Right == nil {
-			n.Right = &Node{index: i}
+			n.Right = &Node{Value: s}
 			return nil
 		}
-		return n.Right.Insert(i, compare)
+		return n.Right.Insert(s)
 	}
 	return nil
 }
@@ -166,34 +131,26 @@ Finding a value...
 
 */
 
-// `Find` takes an index and a Comparer. It returns
+// `Find` searches for a string. It returns:
 // * The node containing the value, or
 // * `nil` if no such node exists.
-// The algorithm is pretty much the same as that of `Insert`.
-func (n *Node) Find(i int, compare Comparer) (*Node, error) {
+func (n *Node) Find(s string) (*Node, error) {
 
 	if n == nil {
 		return nil, nil
 	}
 
-	// As with `Insert`, the Comparer must exist.
-	if compare == nil {
-		return nil, errors.New("compare must not be nil")
-	}
-
-	// Compare the data at index `i` with the data at index `n.index`.
-	switch compare(i, n.index) {
+	switch {
 	// If the current node contains the value, return the node.
-	case equal:
+	case s == n.Value:
 		return n, nil
 	// If the data value is less than the current node's value, call `Find` for the left child node,
-	case less:
-		return n.Left.Find(i, compare)
-	// else call `Find` for the right child node.
-	case greater:
-		return n.Right.Find(i, compare)
+	case s < n.Value:
+		return n.Left.Find(s)
+		// else call `Find` for the right child node.
+	default:
+		return n.Right.Find(s)
 	}
-	return nil, errors.New("compare() returned an unexpected value")
 }
 
 /*
@@ -231,24 +188,20 @@ func (n *Node) replaceNode(parent, replacement *Node) error {
 
 // `Delete` removes an element from the tree.
 // It is an error to try deleting an element that does not exist.
-func (n *Node) Delete(i int, parent *Node, compare Comparer) error {
+// In order to remove an element properly, `Delete` needs to know the node's parent node.
+func (n *Node) Delete(s string, parent *Node) error {
 
 	if n == nil {
 		return errors.New("Value to be deleted does not exist in the tree")
 	}
 
-	// Again, the Comparer must exist.
-	if compare == nil {
-		return errors.New("compare must not be nil")
-	}
-
 	// Search the node to be deleted.
-	switch compare(i, n.index) {
-	case less:
-		return n.Left.Delete(i, n, compare)
-	case greater:
-		return n.Right.Delete(i, n, compare)
-	case equal:
+	switch {
+	case s < n.Value:
+		return n.Left.Delete(s, n)
+	case s > n.Value:
+		return n.Right.Delete(s, n)
+	default:
 		// We found the node to be deleted.
 		// If the node has no children, simply remove it from its parent.
 		if n.Left == nil && n.Right == nil {
@@ -271,10 +224,10 @@ func (n *Node) Delete(i int, parent *Node, compare Comparer) error {
 		replacement, replParent := n.Left.findMax(n)
 
 		//...and replace the node's data with the replacement's data.
-		n.index = replacement.index
+		n.Value = replacement.Value
 
-		// Then remove the replacement node by calling Delete on it.
-		return replacement.Delete(i, replParent, compare)
+		// Then remove the replacement node.
+		return replacement.Delete(s, replParent)
 	}
 	return errors.New("compare() returned an unexpected value")
 }
@@ -284,7 +237,7 @@ func (n *Node) Delete(i int, parent *Node, compare Comparer) error {
 
 One of a binary tree's nodes is the root node - the "entry point" of the tree.
 
-The Tree data type wraps the root node into some bits of special treatment. Especially, it handles the case where the tree is completely empty.
+The Tree data type wraps the root node and applies some special treatment. Especially, it handles the cases where the tree is completely empty or consists of a single node.
 
 The Tree data type also provides an additional function for traversing the whole tree.
 
@@ -296,30 +249,40 @@ type Tree struct {
 }
 
 // `Insert` calls `Node.Insert` unless the root node is `nil`
-func (t *Tree) Insert(i int, compare Comparer) error {
+func (t *Tree) Insert(s string) error {
 	// If the tree is empty, create a new node,...
 	if t.Root == nil {
-		t.Root = &Node{index: i}
+		t.Root = &Node{Value: s}
 		return nil
 	}
 	// ...else call `Node.Insert`.
-	return t.Root.Insert(i, compare)
+	return t.Root.Insert(s)
 }
 
 // `Find` calls `Node.Find` unless the root node is `nil`
-func (t *Tree) Find(i int, compare Comparer) (*Node, error) {
+func (t *Tree) Find(s string) (*Node, error) {
 	if t.Root == nil {
 		return nil, nil
 	}
-	return t.Root.Find(i, compare)
+	return t.Root.Find(s)
 }
 
 // `Delete` calls `Node.Delete` unless the root node is `nil`
-func (t *Tree) Delete(i int, compare Comparer) error {
+func (t *Tree) Delete(s string) error {
+
+	// Special case 1: empty tree.
 	if t.Root == nil {
 		return errors.New("Cannot delete from an empty tree")
 	}
-	return t.Root.Delete(i, nil, compare)
+
+	// Special case 2: tree consists of root node only, and root node contains
+	// the value to be removed.
+	if s == t.Root.Value && t.Root.Left == nil && t.Root.Right == nil {
+		t.Root = nil
+	}
+
+	// In all other cases, call `Node.Delete`.
+	return t.Root.Delete(s, nil)
 }
 
 // `Traverse` is a simple method that traverses the tree in left-to-right order
@@ -340,32 +303,30 @@ func (t *Tree) Traverse(n *Node, f func(*Node)) {
 // `main`
 func main() {
 
-	// Set up a small container.
-	container := Container{"delta", "bravo", "charlie", "echo", "alpha"}
-	fmt.Println("Container: ", container)
+	// Set up a slice of strings.
+	values := []string{"delta", "bravo", "charlie", "echo", "alpha"}
+	fmt.Println("Values: ", values)
 
-	// Create a tree and fill it from the container.
+	// Create a tree and fill it from the values.
 	tree := &Tree{}
-	for i := range container {
-		err := tree.Insert(i, container.Compare)
+	for _, s := range values {
+		err := tree.Insert(s)
 		if err != nil {
-			log.Fatal("Error inserting value at index ", i, ": ", err)
+			log.Fatal("Error inserting value '", s, "': ", err)
 		}
 	}
 
-	// Print the sorted container.
-	fmt.Print("Sorted container: [")
-	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(container[n.index], " ") })
+	// Print the sorted values.
+	fmt.Print("Sorted values: [")
+	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, " ") })
 	fmt.Println("]")
 
-	// Find values by index.
-	fmt.Print("Find by index: ")
-	for i := range container {
-		node, err := tree.Find(i, container.Compare)
-		if err != nil {
-			log.Fatal("Error during Find() at index ", i, ": ", err)
-		}
-		fmt.Print(container[node.index], " ")
+	// Find values.
+	s := "delta"
+	fmt.Print("Find node of '", s, "': ")
+	node, err := tree.Find(s)
+	if err != nil {
+		log.Fatal("Error during Find(): ", err)
 	}
-	fmt.Println()
+	fmt.Printf("%v\n", node)
 }
