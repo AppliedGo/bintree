@@ -32,18 +32,61 @@ This is about a simple binary search tree.
 
 ## The Problem
 
-Linear data containers (lists, arrays) have O(n) search complexity.
+Searching a value in a linear data container (list, array) with *n* elements can take up to *n* steps. Click on "Play" in the animation below and see how many steps it takes to find the value "3" when this value is in the last element of a list container.
+
+HYPE[Linear Search](LinearSearch.html)
+
+Computer scientists say that this operation has an [*order of O(n)*](https://en.wikipedia.org/wiki/Big_O_notation). For very large values of *n*, this operation can become quite slow. Can we do better?
+
 
 ## The Solution
 
-Search trees have O(log(n)) to O(n).
+If the data is organized in a tree structure, access can be much faster. Rather than 6 steps, the search takes only two steps:
+
+HYPE[Tree Search](TreeSearch.html)
+
 
 ## Binary Search Tree Basics
 
-* Node: Value, left child, right child
-* Tree: One Root node, 0 or more child nodes
-* All left children have smaller values, all right children have larger values than the root node's value
-* Same applied to each subnode -> each subtree is also a tree
+What is this "tree structure" in the above animation? Well, this structure is called a *binary search tree*. It has the following properties:
+
+1. A tree consists of *nodes* that store unique values.
+2. Each node has zero, one, or two child nodes.
+3. One of the nodes is designated as the *root node* that is at the top of the tree structure. (This is the "entry point" where all operations start.)
+3. Each node has exactly one parent node, except for the root node, which has no parent.
+4. Each node's value is larger than the value of its left child but larger than the value of its right child.
+5. Each subtree to the left of a node only contains values that are smaller than the node's value, and each subtree to the right of a node contains only larger values.
+
+Some quick definitions that help keeping the following text shorter:
+
+1. A node with no children is called a *leaf node*.
+2. A node with one child is called a *half leaf node*.
+3. A node with two children is called an *inner node*.
+4. The longest path from the root node to a leaf node is called the tree's *height*.
+
+![Binary Tree Definitions](BinTreeDef.png)
+
+In the best case, the height of a tree with *n* elements is log2(n+1) (where "log2" means the logarithm to base 2). All paths from the root node to a leaf node would have roughly the same length (plus/minus one). The tree is called a "balanced tree" in this case. Operations on this tree would have an *order* of *O(log(n)).
+
+For large values of *n*, the logarithm of *n* is much smaller than *n* itself, which is why algorithms that need O(log(n)) time are much faster on average than algorithms that need O(n) time.
+
+Take a calculator and find it out!
+
+Let's say we have 1000 elements in our data store.
+
+If the data store is a linear list, a search needs at most 1000 steps to find a value.
+
+If the data store is a balanced tree, a search needs at most log2(1001), or roughly 10 steps. What an improvement!
+
+In this post, we look at a very simple binary search tree. Especially, we do not care to minimize the height of the search tree. So in the worst case, a tree with *n* elements can have a height of *n*, which means it is not better than a linear list. In fact, in this case, the tree *is* effectively a linear list:
+
+![Binary Tree Worst Case](BinTreeWorstCase.png)
+
+So in the tree that we are going to implement, a search would take anywhere between O(log(n)) and O(n) time. In an upcoming article, we'll see how to ensure that the tree is always balanced, so that a search always takes only O(log(n)) time.
+
+## Today's code: A simple binary search tree
+
+Let's go through implementing a very simple search tree. It has three operations: Insert, Delete, and Find. We also add a Traverse function for traversing the tree in sort order.
 
 */
 
@@ -56,22 +99,15 @@ import (
 	"log"
 )
 
-// Aliases for the results of comparing two values.
-const (
-	less    = -1
-	equal   = 0
-	greater = 1
-)
-
 /*
 ## A Tree Node
 
-In general, a tree node consists of
+Base on the above definition of a binary tree, a tree node consists of
 * a value,
 * a left subtree, and
 * a right subtree.
 
-This is a recursive data structure: Each subtree of a node is also a node containing subtrees.
+By the way, this is a *recursive* data structure: Each subtree of a node is also a node containing subtrees.
 
 In this minimal setup, the tree contains simple string data.
 */
@@ -87,7 +123,19 @@ type Node struct {
 
 ### Insert
 
-Insert inserts a value...
+To insert a value into a sorted tree, we need to find the correct place to add a new node with this value. Here is how:
+
+1. Start at the root node.
+2. Compare the new value with the current node's value.
+	* If it is the same, stop. We have that value already.
+	* If it is smaller, repeat 2. with the left child node. If there is no left child node, add a new one with the new value. Stop.
+	* IF it is greater, repeat 2. with the right child node, or create a new one if none exists. Stop.
+
+Sounds quite easy, doesn't it? Just keep in mind we do not take care of keeping the tree balanced. Doing so adds a bit of complexity but for now we don't care about this.
+
+HYPE[Insert](TreeInsert.html)
+
+The Insert method we define here works *recursively*. That is, it calls itself but with one of the child nodes as the new receiver. If you are unfamiliar with recursion, see the little example [here](https://en.wikipedia.org/wiki/Recursion#In_computer_science) or have a look at [this factorial function](https://play.golang.org/p/feMIAgYWg3).
 
 */
 
@@ -127,7 +175,7 @@ func (n *Node) Insert(s string) error {
 /*
 ### Find
 
-Finding a value...
+Finding a value works as seen in the second animation of this article. (Hence, no animation here.) The Find method is also recursive (not surprising), and it returns either the node that contains the value, or nil.
 
 */
 
@@ -156,9 +204,35 @@ func (n *Node) Find(s string) (*Node, error) {
 /*
 ### Delete
 
-Deleting works like this...
+Deleting a value is a bit more complicated. Or rather, it is easy for two cases, and complicated for the third.
 
-...
+*The easy cases:*
+
+**Delete a leaf node.**
+
+This one is dead simple: Just set the parent's pointer to the node to nil.
+
+**Delete a half-leaf node.**
+
+Still easy: Replace the node by its child node. The tree's order remains intact.
+
+*The complicated case:*
+
+**Delete an inner node.**
+
+This is the interesting part. The node to be deleted has two children, and we cannot assign both to the deleted node's parent node. Here is how this is solved. For simplicity, we assume that the node to be deleted is the *right* child of its parent node. The steps also apply if the node is the *left* child; you only need to swap "right" for "left", and "large" for "small".
+
+1. In the node's left subtree, find the node with the largest value. Let's call this node "Node B".
+2. Replace the node's value with B's value.
+3. If B is a leaf node or a half-leaf node, delete it as described above for the leaf and half-leaf cases.
+4. If B is an inner node, recursively call the Delete method on this node.
+
+The animation shows how the root node is deleted. This is a simple case where "Node B" is a half-leaf node and hence does not require a recursive delete.
+
+HYPE[Delete](TreeDelete.html)
+
+To implement this, we first need two helper functions. The first one finds the maximum element in the subtree of the given node. The second one removes a node from its parent. To do so, it first determines if the node is the left child or the right child. Then it replaces the appropriate pointer with either nil (in the leaf case) or with the node's child node (in the half-leaf case).
+
 */
 
 // `findMax` finds the maximum element in a (sub-)tree. Its value replaces the value of the
@@ -298,7 +372,10 @@ func (t *Tree) Traverse(n *Node, f func(*Node)) {
 }
 
 /* ## A Couple Of Tree Operations
- */
+
+Our `main` function does a quick sort by filling a tree and reading it out again. Then it searches for a particular node. No fancy output to see here; this is just the proof that the whole code above works as it should. 
+
+*/
 
 // `main`
 func main() {
@@ -330,3 +407,23 @@ func main() {
 	}
 	fmt.Printf("%v\n", node)
 }
+
+/*
+The code is on GitHub. Use `-d` on `go get` to avoid installing the binary into $GOPATH/bin.
+
+```sh
+go get -d github.com/appliedgo/bintree
+cd $GOPATH/src/github.com/appliedgo/bintree
+go build
+./bintree
+```
+
+## Conclusion
+
+Find out more about binary search trees on [Wikipedia](https://en.wikipedia.org/wiki/Binary_search_tree).
+
+In the next article on binary trees, we will see how to ensure that the tree is always balanced, so that we always have optimal search performance.
+
+Until then!
+
+
