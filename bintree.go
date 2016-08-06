@@ -26,7 +26,7 @@ tags = ["Tree", "Search Tree", "Binary Tree"]
 categories = ["Tutorial"]
 +++
 
-This is about a simple binary search tree.
+Search trees are everywhere: In databases, in file systems, in board game algorithms,... This post explores the probably most basic form of a tree: a binary search tree.
 
 <!--more-->
 
