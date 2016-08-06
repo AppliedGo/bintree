@@ -150,6 +150,7 @@ The Insert method we define here works *recursively*. That is, it calls itself b
 
 // `Insert` inserts new data into the tree, at the position determined by the search value.
 // Return values:
+//
 // * `true` if the data was successfully inserted,
 // * `false` if the data value already exists in the tree.
 func (n *Node) Insert(value, data string) error {
@@ -158,7 +159,6 @@ func (n *Node) Insert(value, data string) error {
 		return errors.New("Cannot insert a value into a nil tree")
 	}
 
-	// Compare the data.
 	switch {
 	// If the data is already in the tree, return.
 	case value == n.Value:
@@ -184,23 +184,25 @@ func (n *Node) Insert(value, data string) error {
 /*
 ### Find
 
-Finding a value works as seen in the second animation of this article. (Hence, no animation here.) The Find method is also recursive (not surprising), and it returns either the node that contains the value, or nil.
+Finding a value works as seen in the second animation of this article. (Hence, no animation here.) The Find method is also recursive.
+It returns either the data of the found node and `true`, or "" and `false` if the node is not found.
 
 */
 
 // `Find` searches for a string. It returns:
-// * The node containing the value, or
-// * `nil` if no such node exists.
-func (n *Node) Find(s string) (*Node, error) {
+//
+// * The data associated with the value and `true`, or
+// * "" and `false` if the search string is not found in the tree.
+func (n *Node) Find(s string) (string, bool) {
 
 	if n == nil {
-		return nil, nil
+		return "", false
 	}
 
 	switch {
 	// If the current node contains the value, return the node.
 	case s == n.Value:
-		return n, nil
+		return n.Data, true
 	// If the data value is less than the current node's value, call `Find` for the left child node,
 	case s < n.Value:
 		return n.Left.Find(s)
@@ -342,9 +344,9 @@ func (t *Tree) Insert(value, data string) error {
 }
 
 // `Find` calls `Node.Find` unless the root node is `nil`
-func (t *Tree) Find(s string) (*Node, error) {
+func (t *Tree) Find(s string) (string, bool) {
 	if t.Root == nil {
-		return nil, nil
+		return "", false
 	}
 	return t.Root.Find(s)
 }
@@ -405,15 +407,18 @@ func main() {
 	// Find values.
 	s := "d"
 	fmt.Print("Find node '", s, "': ")
-	node, err := tree.Find(s)
-	if err != nil {
-		log.Fatal("Error during Find(): ", err)
+	d, found := tree.Find(s)
+	if !found {
+		log.Fatal("Cannot find '" + s + "'")
 	}
-	fmt.Println(node.Value + " contains: '" + node.Data + "'")
+	fmt.Println("Found " + s + ": '" + d + "'")
 
 	// Delete a value.
-	err = tree.Delete(s)
-	fmt.Print("After deleting " + s + ": ")
+	err := tree.Delete(s)
+	if err != nil {
+		log.Fatal("Error deleting "+s+": ", err)
+	}
+	fmt.Print("After deleting '" + s + "': ")
 	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, ": ", n.Data, " | ") })
 	fmt.Println()
 }
@@ -430,9 +435,14 @@ go build
 
 ## Conclusion
 
+Trees are immensely useful for searching and sorting operations. This article has covered the most basic form of a search tree, a binary tree. Other variations of trees exist (and are widely used), for example, trees where nodes can have more than two children, or trees that store data in leaf nodes only. None of these variations are inherently better; each has its particular use case(s).
+
+You surely have noticed that most of the methods used here are written in a recursive manner. To keep your fingers exercised,
+rewrite those methods without using recursion.
+
 Find out more about binary search trees on [Wikipedia](https://en.wikipedia.org/wiki/Binary_search_tree).
 
-In the next article on binary trees, we will see how to ensure that the tree is always balanced, so that we always have optimal search performance.
+In the next article on binary trees, we will see how to keep the tree balanced, to achieve optimal search performance.
 
 Until then!
 
