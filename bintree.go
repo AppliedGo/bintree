@@ -41,14 +41,16 @@ Computer scientists say that this operation has an [*order of O(n)*](https://en.
 
 ## The Solution
 
-If the data is organized in a tree structure, access can be much faster. Rather than 6 steps, the search takes only two steps:
+If the data is organized in a tree structure, access can be much faster. Rather than 6 steps in the above example, the search takes only two steps:
 
 HYPE[Tree Search](TreeSearch.html)
+
+The secret is that there is a sort order in this data structure. The search value is first compared against the value at the top of this structure. If the search value is smaller, the search continues with the next value to the left; else it continues with the next value to the right. Repeat until the value is found, or until there are no more values to the left or the right of the current value.
 
 
 ## Binary Search Tree Basics
 
-What is this "tree structure" in the above animation? Well, this structure is called a *binary search tree*. It has the following properties:
+But wait, what is this "tree structure" seen in the animation above? This structure is called a *binary search tree*. It has the following properties:
 
 1. A tree consists of *nodes* that store unique values.
 2. Each node has zero, one, or two child nodes.
@@ -74,15 +76,21 @@ Take a calculator and find it out!
 
 Let's say we have 1000 elements in our data store.
 
-If the data store is a linear list, a search needs at most 1000 steps to find a value.
+If the data store is a linear list, a search needs between 1 and 1000 steps to find a value. On average, this would be about 500 steps per search (if we assume the data is randomly distributed in this list).
 
 If the data store is a balanced tree, a search needs at most log2(1001), or roughly 10 steps. What an improvement!
 
-In this post, we look at a very simple binary search tree. Especially, we do not care to minimize the height of the search tree. So in the worst case, a tree with *n* elements can have a height of *n*, which means it is not better than a linear list. In fact, in this case, the tree *is* effectively a linear list:
+To visualize the difference, here is a diagram with a linear graph (in red) and a logarithmic graph (in blue). As the value on the x axis - the size of the data set - increases, the linear function keeps increasing with the same rate while the logarithmic function increases slower and slower the larger x gets.
+
+![Logarithmic function versus linear function](logVsLinear.png)
+
+Remember, O(log(n)) is only for the best case, where the tree is balanced, and no path to a leaf node is particularly longer than any other path.
+
+In this post, however, we look at a very simple binary search tree. Especially, we do not care to minimize the height of the search tree. So in the worst case, a tree with *n* elements can have a height of *n*, which means it is not better than a linear list. In fact, in this case, the tree *is* effectively a linear list:
 
 ![Binary Tree Worst Case](BinTreeWorstCase.png)
 
-So in the tree that we are going to implement, a search would take anywhere between O(log(n)) and O(n) time. In an upcoming article, we'll see how to ensure that the tree is always balanced, so that a search always takes only O(log(n)) time.
+So in the tree that we are going to implement, a search would take anywhere between O(log(n)) and O(n) time. In the next article, we'll see how to ensure that the tree is always balanced, so that a search always takes only O(log(n)) time.
 
 ## Today's code: A simple binary search tree
 
@@ -112,9 +120,10 @@ By the way, this is a *recursive* data structure: Each subtree of a node is also
 In this minimal setup, the tree contains simple string data.
 */
 
-// `Node` contains the data, a left child node, and a right child node.
+// `Node` contains the search value, some data, a left child node, and a right child node.
 type Node struct {
 	Value string
+	Data  string
 	Left  *Node
 	Right *Node
 }
@@ -139,11 +148,11 @@ The Insert method we define here works *recursively*. That is, it calls itself b
 
 */
 
-// `Insert` inserts a new string value into the tree.
+// `Insert` inserts new data into the tree, at the position determined by the search value.
 // Return values:
-// * `true` if the string was successfully inserted,
-// * `false` if the string value already exists in the tree.
-func (n *Node) Insert(s string) error {
+// * `true` if the data was successfully inserted,
+// * `false` if the data value already exists in the tree.
+func (n *Node) Insert(value, data string) error {
 
 	if n == nil {
 		return errors.New("Cannot insert a value into a nil tree")
@@ -152,22 +161,22 @@ func (n *Node) Insert(s string) error {
 	// Compare the data.
 	switch {
 	// If the data is already in the tree, return.
-	case s == n.Value:
+	case value == n.Value:
 		return nil
 	// If the data value is less than the current node's value, and if the left child node is `nil`, insert a new left child node. Else call `Insert` on the left subtree.
-	case s < n.Value:
+	case value < n.Value:
 		if n.Left == nil {
-			n.Left = &Node{Value: s}
+			n.Left = &Node{Value: value, Data: data}
 			return nil
 		}
-		return n.Left.Insert(s)
+		return n.Left.Insert(value, data)
 	// If the data value is greater than the current node's value, do the same but for the right subtree.
-	case s > n.Value:
+	case value > n.Value:
 		if n.Right == nil {
-			n.Right = &Node{Value: s}
+			n.Right = &Node{Value: value, Data: data}
 			return nil
 		}
-		return n.Right.Insert(s)
+		return n.Right.Insert(value, data)
 	}
 	return nil
 }
@@ -246,13 +255,12 @@ func (n *Node) findMax(parent *Node) (*Node, *Node) {
 }
 
 // `replaceNode` replaces the `parent`'s child pointer to `n` with a pointer to the `replacement` node.
+// `parent` must not be `nil`.
 func (n *Node) replaceNode(parent, replacement *Node) error {
 	if n == nil {
 		return errors.New("replaceNode() not allowed on a nil node")
 	}
-	if parent == nil {
-		return nil
-	}
+
 	if n == parent.Left {
 		parent.Left = replacement
 	}
@@ -263,8 +271,8 @@ func (n *Node) replaceNode(parent, replacement *Node) error {
 // `Delete` removes an element from the tree.
 // It is an error to try deleting an element that does not exist.
 // In order to remove an element properly, `Delete` needs to know the node's parent node.
+// `parent` must not be `nil`.
 func (n *Node) Delete(s string, parent *Node) error {
-
 	if n == nil {
 		return errors.New("Value to be deleted does not exist in the tree")
 	}
@@ -297,13 +305,13 @@ func (n *Node) Delete(s string, parent *Node) error {
 		// Find the maximum element in the left subtree...
 		replacement, replParent := n.Left.findMax(n)
 
-		//...and replace the node's data with the replacement's data.
+		//...and replace the node's value and data with the replacement's value and data.
 		n.Value = replacement.Value
+		n.Data = replacement.Data
 
 		// Then remove the replacement node.
-		return replacement.Delete(s, replParent)
+		return replacement.Delete(replacement.Value, replParent)
 	}
-	return errors.New("compare() returned an unexpected value")
 }
 
 /*
@@ -323,14 +331,14 @@ type Tree struct {
 }
 
 // `Insert` calls `Node.Insert` unless the root node is `nil`
-func (t *Tree) Insert(s string) error {
+func (t *Tree) Insert(value, data string) error {
 	// If the tree is empty, create a new node,...
 	if t.Root == nil {
-		t.Root = &Node{Value: s}
+		t.Root = &Node{Value: value, Data: data}
 		return nil
 	}
 	// ...else call `Node.Insert`.
-	return t.Root.Insert(s)
+	return t.Root.Insert(value, data)
 }
 
 // `Find` calls `Node.Find` unless the root node is `nil`
@@ -341,22 +349,18 @@ func (t *Tree) Find(s string) (*Node, error) {
 	return t.Root.Find(s)
 }
 
-// `Delete` calls `Node.Delete` unless the root node is `nil`
+// `Delete` has one special case: the empty tree. (And deleting from an empty tree is an error.)
+// In all other cases, it calls `Node.Delete`.
 func (t *Tree) Delete(s string) error {
 
-	// Special case 1: empty tree.
 	if t.Root == nil {
 		return errors.New("Cannot delete from an empty tree")
 	}
 
-	// Special case 2: tree consists of root node only, and root node contains
-	// the value to be removed.
-	if s == t.Root.Value && t.Root.Left == nil && t.Root.Right == nil {
-		t.Root = nil
-	}
-
-	// In all other cases, call `Node.Delete`.
-	return t.Root.Delete(s, nil)
+	// Call`Node.Delete`. Passing a "fake" parent node here avoids
+	// having to treat the root node as a special case.
+	fakeParent := &Node{Right: t.Root}
+	return t.Root.Delete(s, fakeParent)
 }
 
 // `Traverse` is a simple method that traverses the tree in left-to-right order
@@ -373,7 +377,7 @@ func (t *Tree) Traverse(n *Node, f func(*Node)) {
 
 /* ## A Couple Of Tree Operations
 
-Our `main` function does a quick sort by filling a tree and reading it out again. Then it searches for a particular node. No fancy output to see here; this is just the proof that the whole code above works as it should. 
+Our `main` function does a quick sort by filling a tree and reading it out again. Then it searches for a particular node. No fancy output to see here; this is just the proof that the whole code above works as it should.
 
 */
 
@@ -381,31 +385,37 @@ Our `main` function does a quick sort by filling a tree and reading it out again
 func main() {
 
 	// Set up a slice of strings.
-	values := []string{"delta", "bravo", "charlie", "echo", "alpha"}
-	fmt.Println("Values: ", values)
+	values := []string{"d", "b", "c", "e", "a"}
+	data := []string{"delta", "bravo", "charlie", "echo", "alpha"}
 
 	// Create a tree and fill it from the values.
 	tree := &Tree{}
-	for _, s := range values {
-		err := tree.Insert(s)
+	for i := 0; i < len(values); i++ {
+		err := tree.Insert(values[i], data[i])
 		if err != nil {
-			log.Fatal("Error inserting value '", s, "': ", err)
+			log.Fatal("Error inserting value '", values[i], "': ", err)
 		}
 	}
 
 	// Print the sorted values.
-	fmt.Print("Sorted values: [")
-	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, " ") })
-	fmt.Println("]")
+	fmt.Print("Sorted values: | ")
+	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, ": ", n.Data, " | ") })
+	fmt.Println()
 
 	// Find values.
-	s := "delta"
-	fmt.Print("Find node of '", s, "': ")
+	s := "d"
+	fmt.Print("Find node '", s, "': ")
 	node, err := tree.Find(s)
 	if err != nil {
 		log.Fatal("Error during Find(): ", err)
 	}
-	fmt.Printf("%v\n", node)
+	fmt.Println(node.Value + " contains: '" + node.Data + "'")
+
+	// Delete a value.
+	err = tree.Delete(s)
+	fmt.Print("After deleting " + s + ": ")
+	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, ": ", n.Data, " | ") })
+	fmt.Println()
 }
 
 /*
@@ -426,4 +436,4 @@ In the next article on binary trees, we will see how to ensure that the tree is 
 
 Until then!
 
-
+*/
