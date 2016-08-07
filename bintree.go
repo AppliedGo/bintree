@@ -56,7 +56,7 @@ But wait, what is this "tree structure" seen in the animation above? This struct
 2. Each node has zero, one, or two child nodes.
 3. One of the nodes is designated as the *root node* that is at the top of the tree structure. (This is the "entry point" where all operations start.)
 3. Each node has exactly one parent node, except for the root node, which has no parent.
-4. Each node's value is larger than the value of its left child but larger than the value of its right child.
+4. Each node's value is larger than the value of its left child but smaller than the value of its right child.
 5. Each subtree to the left of a node only contains values that are smaller than the node's value, and each subtree to the right of a node contains only larger values.
 
 Some quick definitions that help keeping the following text shorter:
@@ -445,5 +445,13 @@ Find out more about binary search trees on [Wikipedia](https://en.wikipedia.org/
 In the next article on binary trees, we will see how to keep the tree balanced, to achieve optimal search performance.
 
 Until then!
+
+- - -
+
+Changelog
+
+2016-08-07 Fixed:
+4. Each node's value is larger than the value of its left child but **larger** than the value of its right child.
+4. Each node's value is larger than the value of its left child but **smaller** than the value of its right child.
 
 */
