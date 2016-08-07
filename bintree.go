@@ -265,6 +265,7 @@ func (n *Node) replaceNode(parent, replacement *Node) error {
 
 	if n == parent.Left {
 		parent.Left = replacement
+		return nil
 	}
 	parent.Right = replacement
 	return nil
