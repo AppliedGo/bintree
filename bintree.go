@@ -455,4 +455,7 @@ Changelog
 4. Each node's value is larger than the value of its left child but **larger** than the value of its right child.
 4. Each node's value is larger than the value of its left child but **smaller** than the value of its right child.
 
+2016-08-07 Fixed: missing return in `replaceNode`.
+
+
 */
