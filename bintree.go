@@ -110,7 +110,7 @@ import (
 /*
 ## A Tree Node
 
-Base on the above definition of a binary tree, a tree node consists of
+Based on the above definition of a binary tree, a tree node consists of
 * a value,
 * a left subtree, and
 * a right subtree.
@@ -456,6 +456,7 @@ Changelog
 4. Each node's value is larger than the value of its left child but **smaller** than the value of its right child.
 
 2016-08-07 Fixed: missing return in `replaceNode`.
+2016-08-27 Fixed typo: "Base on"
 
 
 */
