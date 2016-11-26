@@ -433,16 +433,16 @@ func main() {
 	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, ": ", n.Data, " | ") })
 	fmt.Println()
 
-	// Special case: A single-node tree.
+	// Special case: A single-node tree. (See `Tree.Delete` about why this is a special case.)
 	fmt.Println("Single-node tree")
 	tree = &Tree{}
 
-	tree.Insert("root", "node")
+	tree.Insert("a", "alpha")
 	fmt.Println("After insert:")
 	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, ": ", n.Data, " | ") })
 	fmt.Println()
 
-	tree.Delete("root")
+	tree.Delete("a")
 	fmt.Println("After delete:")
 	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, ": ", n.Data, " | ") })
 	fmt.Println()
@@ -485,6 +485,8 @@ Changelog
 2016-08-07 Fixed: missing return in `replaceNode`.
 
 2016-08-27 Fixed typo: "Base on"
+
+2016-11-26: Fixed corner case of deleting the root note of a tree if the root node is the only node.
 
 
 */
