@@ -360,10 +360,20 @@ func (t *Tree) Delete(s string) error {
 		return errors.New("Cannot delete from an empty tree")
 	}
 
-	// Call`Node.Delete`. Passing a "fake" parent node here avoids
-	// having to treat the root node as a special case.
+	// Call`Node.Delete`. Passing a "fake" parent node here *almost* avoids
+	// having to treat the root node as a special case, with one exception.
 	fakeParent := &Node{Right: t.Root}
-	return t.Root.Delete(s, fakeParent)
+	err := t.Root.Delete(s, fakeParent)
+	if err != nil {
+		return err
+	}
+	// If the root node is the only node in the tree, and if it is deleted,
+	// then it *only* got removed from `fakeParent`. `t.Root` still points to the old node.
+	// We rectify this by setting t.Root to nil.
+	if fakeParent.Right == nil {
+		t.Root = nil
+	}
+	return nil
 }
 
 // `Traverse` is a simple method that traverses the tree in left-to-right order
@@ -422,6 +432,21 @@ func main() {
 	fmt.Print("After deleting '" + s + "': ")
 	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, ": ", n.Data, " | ") })
 	fmt.Println()
+
+	// Special case: A single-node tree.
+	fmt.Println("Single-node tree")
+	tree = &Tree{}
+
+	tree.Insert("root", "node")
+	fmt.Println("After insert:")
+	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, ": ", n.Data, " | ") })
+	fmt.Println()
+
+	tree.Delete("root")
+	fmt.Println("After delete:")
+	tree.Traverse(tree.Root, func(n *Node) { fmt.Print(n.Value, ": ", n.Data, " | ") })
+	fmt.Println()
+
 }
 
 /*
