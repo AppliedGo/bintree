@@ -250,6 +250,9 @@ To implement this, we first need two helper functions. The first one finds the m
 // to-be-deleted node.
 // Return values: the node itself and its parent node.
 func (n *Node) findMax(parent *Node) (*Node, *Node) {
+	if n == nil {
+		return nil, parent
+	}
 	if n.Right == nil {
 		return n, parent
 	}
