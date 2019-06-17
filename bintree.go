@@ -21,9 +21,9 @@ author = "Christoph Berger"
 email = "chris@appliedgo.net"
 date = "2016-08-06"
 publishdate = "2016-08-06"
-domains = ["Algorithms And Data Structures"]
+categories = ["Algorithms And Data Structures"]
 tags = ["Tree", "Search Tree", "Binary Tree"]
-categories = ["Tutorial"]
+articletypes = ["Tutorial"]
 +++
 
 Search trees are everywhere: In databases, in file systems, in board game algorithms,... This post explores the probably most basic form of a tree: a binary search tree.
