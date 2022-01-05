@@ -96,6 +96,11 @@ So in the tree that we are going to implement, a search would take anywhere betw
 
 Let's go through implementing a very simple search tree. It has three operations: Insert, Delete, and Find. We also add a Traverse function for traversing the tree in sort order.
 
+___
+
+**Update:** the *balanced* version of this code is now available in a generic version. See [How I turned a binary search tree into a generic data structure with go2go · Applied Go](https://appliedgo.net/generictree/)
+___
+
 */
 
 // ## Imports and globals
