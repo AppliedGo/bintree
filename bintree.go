@@ -98,7 +98,7 @@ Let's go through implementing a very simple search tree. It has three operations
 
 ___
 
-**Update:** the *balanced* version of this code is now available in a generic version. See [How I turned a binary search tree into a generic data structure with go2go · Applied Go]({{< ref "/generictree/" >}})
+**Update:** the *balanced* version of this code is now available in a generic version. See [How I turned a binary search tree into a generic data structure with go2go · Applied Go]({{< ref "/post/generictree/" >}})
 ___
 
 */
